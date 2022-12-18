@@ -1,91 +1,95 @@
-// Get all needed elements from DOM
-const keys = document.querySelectorAll('.piano-key');
-const piano = document.getElementById('piano');
-const notes_btn = document.querySelector('#btn-notes');
-const letters_button = document.querySelector('#btn-letters');
+const pianoKeys = document.querySelectorAll('.piano-key');
+const piano = document.querySelector('#piano');
+const notesBtn = document.querySelector('#btn-notes');
+const lettersBtn = document.querySelector('#btn-letters');
 
-function keyPressed(e) {
-  const a = document.querySelector(`audio[data-key="${key}"]`);
-  const k = document.querySelector(`.piano-key[data-key="${key}"]`);
-  if (!a) return;
-  a.currentTime = 0;
-  a.play();
-  k.classList.add('piano-key-active');
+let shouldShowLetters = true;
+
+function playAudio(key) {
+  const audio = document.querySelector(`audio[data-key="${key}"]`);
+  if (!audio) return;
+  audio.currentTime = 0;
+  audio.play();
 }
 
-function removeTransition(e) {
-  if (e.propertyName !== 'transform') return;
-  this.classList.remove('piano-key-active');
+function handleKeyPress(key) {
+  const pianoKey = document.querySelector(`.piano-key[data-key="${key}"]`);
+  pianoKey.classList.add('piano-key-active');
+  playAudio(key);
 }
 
-// Transitions
-const start = (event) => {
-  const a = document.querySelector(`audio[data-key="${event.target.dataset.key}"]`);
-  const k = document.querySelector(`.piano-key[data-key="${event.target.dataset.key}"]`);
-  if (!a) return;
-  a.currentTime = 0;
-  a.play();
-  k.classList.add('piano-key-active');
-  event.target.classList.add('piano-key-active');
+function toggleKeyState(key) {
+  key.classList.toggle('piano-key-active');
 }
 
-const stop = (event) => {
-  event.target.classList.remove('piano-key-active');
+const handleTransition = ({target: {dataset: key}}) => {
+  const pianoKey = document.querySelector(`.piano-key[data-key="${key}"]`);
+  playAudio()
+  pianoKey.classList.add('piano-key-active');
+  toggleKeyState(pianoKey);
 }
 
-const startProgram = (event) => {
-  const a = document.querySelector(`audio[data-key="${event.target.dataset.key}"]`);
-  const k = document.querySelector(`.piano-key[data-key="${event.target.dataset.key}"]`);
-  if (!a) return;
-  a.currentTime = 0;
-  a.play();
-  k.classList.add('piano-key-active');
-  event.target.classList.add('piano-key-active');
-  keys.forEach((elem) => {
-    elem.addEventListener('mouseover', start)
-    elem.addEventListener('mouseout', stop)
+const startTransition = (event) => {
+  const key = event.target.dataset.key;
+  const pianoKey = document.querySelector(`.piano-key[data-key="${key}"]`);
+  pianoKey.classList.add('piano-key-active');
+  playAudio(key);
+  toggleKeyState(event.target);
+  pianoKeys.forEach((elem) => {
+    elem.addEventListener('mouseover', handleTransition)
+    elem.addEventListener('mouseout', toggleKeyStateWrapper)
   })
 }
 
-const stopProgram = () => {
-  keys.forEach((elem) => {
-    elem.classList.remove('piano-key-active');
-    elem.removeEventListener('mouseover', start)
-    elem.removeEventListener('mouseout', stop)
+const stopTransition = (event) => {
+  pianoKeys.forEach((elem) => {
+    toggleKeyState(event.target);
+    elem.removeEventListener('mouseover', handleTransition)
+    elem.removeEventListener('mouseout', toggleKeyStateWrapper)
   })
 }
 
-// To switch fullscreen mode
-function fs() {
+function toggleKeyStateWrapper(event) {
+  toggleKeyState(event.target)
+}
+
+function toggleFullScreenMode() {
   if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen();
+    void document.documentElement.requestFullscreen();
   } else {
-    document.exitFullscreen();
+    void document.exitFullscreen();
   }
 }
 
-// to switch between notes and letters
-function lettersOrNotes(lettersState) {
-  if (lettersState) {
-    keys.forEach((elem) => {
-      elem.classList.remove('piano-key-letter');
-    })
-    notes_btn.classList.add('btn-active');
-    letters_button.classList.remove('btn-active');
+function toggleKeyContent() {
+  if (shouldShowLetters) {
+    showLetters();
   } else {
-    keys.forEach((elem) => {
-      elem.classList.add('piano-key-letter');
-    });
-    notes_btn.classList.remove('btn-active');
-    letters_button.classList.add('btn-active');
+    showNotes();
   }
+  shouldShowLetters = !shouldShowLetters;
 }
 
-// Set event listeners
-keys.forEach(key => key.addEventListener('transitionend', removeTransition));
-document.querySelector('.fullscreen').addEventListener('click', fs);
-window.addEventListener('keydown', keyPressed);
-piano.addEventListener('mousedown', startProgram);
-window.addEventListener('mouseup', stopProgram);
-letters_button.addEventListener('click', () => lettersOrNotes(true));
-notes_btn.addEventListener('click', () => lettersOrNotes(false));
+function showNotes() {
+  pianoKeys.forEach((elem) => {
+    toggleKeyState(elem)
+  })
+  notesBtn.classList.add('btn-active');
+  lettersBtn.classList.remove('btn-active');
+}
+
+function showLetters() {
+  pianoKeys.forEach((elem) => {
+    toggleKeyState(elem);
+  });
+  notesBtn.classList.remove('btn-active');
+  lettersBtn.classList.add('btn-active');
+}
+
+pianoKeys.forEach(key => key.addEventListener('transitionend', toggleKeyStateWrapper));
+document.querySelector('.fullscreen').addEventListener('click', toggleFullScreenMode);
+window.addEventListener('keydown', (event) => handleKeyPress(event.target.dataset.key));
+piano.addEventListener('mousedown', startTransition);
+window.addEventListener('mouseup', stopTransition);
+lettersBtn.addEventListener('click', toggleKeyContent);
+notesBtn.addEventListener('click', toggleKeyContent);
