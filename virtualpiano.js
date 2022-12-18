@@ -1,3 +1,4 @@
+// Get all needed elements from DOM
 const keys = document.querySelectorAll('.piano-key');
 const piano = document.getElementById('piano');
 const notes_btn = document.querySelector('#btn-notes');
@@ -17,6 +18,7 @@ function removeTransition(e) {
   this.classList.remove('piano-key-active');
 }
 
+// Transitions
 const start = (event) => {
   const a = document.querySelector(`audio[data-key="${event.target.dataset.key}"]`);
   const k = document.querySelector(`.piano-key[data-key="${event.target.dataset.key}"]`);
@@ -79,7 +81,7 @@ function lettersOrNotes(lettersState) {
   }
 }
 
-
+// Set event listeners
 keys.forEach(key => key.addEventListener('transitionend', removeTransition));
 document.querySelector('.fullscreen').addEventListener('click', fs);
 window.addEventListener('keydown', keyPressed);
